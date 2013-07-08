@@ -24,6 +24,8 @@ References:
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var rest = require('restler');
+var util = require('util');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 
@@ -61,14 +63,64 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
+var buildfn = function(filename) {
+	console.log("buildfn filename=" + filename);
+    var response2file = function(result, response) {
+            console.error("inside response2file")
+        if (result instanceof Error) {
+            console.error('Error: ' + util.format(response.message));
+        } else {
+            console.error("Wrote %s", filename);
+            fs.writeFileSync(filename, result);
+        }
+    };
+    return response2file;
+};
+
+var buildfn_old = function(csvfile, headers) {
+    var response2console = function(result, response) {
+        if (result instanceof Error) {
+            console.error('Error: ' + util.format(response.message));
+        } else {
+            console.error("Wrote %s", csvfile);
+            fs.writeFileSync(csvfile, result);
+            //csv2console(csvfile, headers);
+        }
+    };
+    return response2console;
+};
+
+var buildfn3 = function(file_to_check,checks_file) {
+	var urlrequestdone = function(result, response) {
+		console.error("inside response2file")
+		if (result instanceof Error) {
+			console.error('Error:');
+		} else {
+			fs.writeFileSync(file_to_check, result);
+    			var checkJson = checkHtmlFile(file_to_check, checks_file);
+    			var outJson = JSON.stringify(checkJson, null, 4);
+    			console.log(outJson);
+		}
+	};
+	return urlrequestdone;
+};
+
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+	.option('-u, --url <address>', 'URL of file to run') 
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    var file_to_check = program.file
+    if (program.url != undefined) { 
+	file_to_check = "urlfile.txt";
+	urlrequestdone = buildfn3(file_to_check,program.checks);
+	rest.get(program.url).on('complete',urlrequestdone);
+    } else {
+    	var checkJson = checkHtmlFile(file_to_check, program.checks);
+    	var outJson = JSON.stringify(checkJson, null, 4);
+    	console.log(outJson);
+	}
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
