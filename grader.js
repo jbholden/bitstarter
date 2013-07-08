@@ -63,38 +63,13 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
-var buildfn = function(filename) {
-	console.log("buildfn filename=" + filename);
-    var response2file = function(result, response) {
-            console.error("inside response2file")
-        if (result instanceof Error) {
-            console.error('Error: ' + util.format(response.message));
-        } else {
-            console.error("Wrote %s", filename);
-            fs.writeFileSync(filename, result);
-        }
-    };
-    return response2file;
-};
 
-var buildfn_old = function(csvfile, headers) {
-    var response2console = function(result, response) {
-        if (result instanceof Error) {
-            console.error('Error: ' + util.format(response.message));
-        } else {
-            console.error("Wrote %s", csvfile);
-            fs.writeFileSync(csvfile, result);
-            //csv2console(csvfile, headers);
-        }
-    };
-    return response2console;
-};
 
-var buildfn3 = function(file_to_check,checks_file) {
+var buildfn = function(file_to_check,checks_file) {
 	var urlrequestdone = function(result, response) {
 		console.error("inside response2file")
 		if (result instanceof Error) {
-			console.error('Error:');
+			console.error('Error: ' + util.format(response.message));
 		} else {
 			fs.writeFileSync(file_to_check, result);
     			var checkJson = checkHtmlFile(file_to_check, checks_file);
@@ -114,7 +89,7 @@ if(require.main == module) {
     var file_to_check = program.file
     if (program.url != undefined) { 
 	file_to_check = "urlfile.txt";
-	urlrequestdone = buildfn3(file_to_check,program.checks);
+	urlrequestdone = buildfn(file_to_check,program.checks);
 	rest.get(program.url).on('complete',urlrequestdone);
     } else {
     	var checkJson = checkHtmlFile(file_to_check, program.checks);
